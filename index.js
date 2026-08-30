@@ -1,16 +1,11 @@
 require("dotenv").config();
 
-const {
-    Client,
-    GatewayIntentBits
-} = require("discord.js");
+// 1. Import Client directly from the selfbot library
+const { Client } = require("discord.js-selfbot-v13");
 
+// 2. Initialize without GatewayIntentBits
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
+    checkUpdate: false // Optional: hides library update warnings in your console
 });
 
 client.once("ready", () => {
