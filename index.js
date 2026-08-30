@@ -14,9 +14,18 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", (message) => {
-    console.log(
-        `[${message.guild?.name ?? "DM"}] ${message.author.tag}: ${message.content}`
-    );
+    // 1. Safety check to prevent infinite loops if your own message contains a ping
+    if (message.author.id === client.user.id) return;
+
+    // 2. Trigger only if your account is mentioned in the message
+    if (message.mentions.has(client.user)) {
+        
+        // 3. Send the specific text directly to the channel where the ping occurred
+        message.channel.send("<@716390085896962058> c eiscue");
+        
+        console.log(`Triggered specific response in: ${message.guild?.name ?? "DM"} -> #${message.channel.name}`);
+    }
 });
+
 
 client.login(process.env.TOKEN);
