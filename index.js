@@ -1,31 +1,41 @@
 require("dotenv").config();
-
-// 1. Import Client directly from the selfbot library
 const { Client } = require("discord.js-selfbot-v13");
 
-// 2. Initialize without GatewayIntentBits
 const client = new Client({
-    checkUpdate: false // Optional: hides library update warnings in your console
+    checkUpdate: false
 });
 
+let myId = "";
+let isPaused = false; // Tracks whether the bot should respond
+
 client.once("ready", () => {
+    myId = `<@${client.user.id}>`;
     console.log(`Logged in as ${client.user.tag}`);
-    console.log(`Servers: ${client.guilds.cache.size}`);
 });
 
 client.on("messageCreate", (message) => {
-    // 1. Safety check to prevent infinite loops if your own message contains a ping
+    // 1. If the script is paused, ignore everything immediately
+    if (isPaused) return;
+
+    // 2. Prevent infinite loops
     if (message.author.id === client.user.id) return;
 
-    // 2. Trigger only if your account is mentioned in the message
-    if (message.mentions.has(client.user)) {
-        
-        // 3. Send the specific text directly to the channel where the ping occurred
+    // 3. Captcha Detection
+    // Check if the sender is the specific bot ID AND the message contains the captcha text
+    if (
+        message.author.id === "716390085896962058" && 
+        message.content.includes("Please tell us you're human!")
+    ) {
+        isPaused = true; // Pause the script globally
+        console.log("captcha detected paused");
+        return; // Stop processing this specific message
+    }
+
+    // 4. Ping Detection (only runs if NOT paused and NOT a captcha)
+    if (message.content.includes(myId)) {
         message.channel.send("<@716390085896962058> c eiscue");
-        
-        console.log(`Triggered specific response in: ${message.guild?.name ?? "DM"} -> #${message.channel.name}`);
     }
 });
 
-
 client.login(process.env.TOKEN);
+
