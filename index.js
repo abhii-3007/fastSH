@@ -3,28 +3,29 @@ const { Client } = require("discord.js-selfbot-v13");
 
 // ==========================================
 // ANTI-CRASH SYSTEM
-// Prevents the bot from shutting down due to unhandled errors
 // ==========================================
-process.on('unhandledRejection', (reason, promise) => {
-    console.log('[Anti-Crash] Unhandled Rejection:', reason);
-});
-process.on('uncaughtException', (err, origin) => {
-    console.log('[Anti-Crash] Uncaught Exception:', err);
-});
-process.on('uncaughtExceptionMonitor', (err, origin) => {
-    console.log('[Anti-Crash] Uncaught Exception (Monitor):', err);
-});
-// ==========================================
+process.on('unhandledRejection', (reason) => console.log('[Anti-Crash] Unhandled Rejection:', reason));
+process.on('uncaughtException', (err) => console.log('[Anti-Crash] Uncaught Exception:', err));
+process.on('uncaughtExceptionMonitor', (err) => console.log('[Anti-Crash] Uncaught Exception (Monitor):', err));
+
+// Helper function to pause execution cleanly
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const client = new Client({
-    checkUpdate: false
+    checkUpdate: false,
+    // Spoofing the connection to look like a standard Windows desktop app
+    ws: {
+        properties: {
+            $os: "Windows",
+            $browser: "Discord Client",
+            $device: "desktop"
+        }
+    }
 });
 
-let isPaused = false; // Tracks whether the bot should respond
+let isPaused = false; 
 
-const POKETWO_BOT_ID = "716390085896962058"; // The main bot (for captchas and catching)
-
-// Array containing all three helper bots
+const POKETWO_BOT_ID = "716390085896962058"; 
 const HELPER_BOT_IDS = [
     "1307910235737948252", 
     "1411516692781072434", 
@@ -32,14 +33,13 @@ const HELPER_BOT_IDS = [
 ];
 
 client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`Logged in as ${client.user.tag} - Stealth Mode Active`);
 });
 
 client.on("messageCreate", async (message) => {
-    // Make the command lowercase and remove extra spaces to prevent typos from breaking it
     const msgContent = message.content.trim().toLowerCase();
 
-    // 1. Handle commands sent by YOU (must be from the account the token belongs to)
+    // 1. Handle Pause/Resume Commands
     if (message.author.id === client.user.id) {
         if (msgContent === "!pause") {
             isPaused = true;
@@ -51,56 +51,75 @@ client.on("messageCreate", async (message) => {
             console.log("▶️ Bot manually resumed.");
             return;
         }
-        // Prevent infinite loops for any other messages sent by you
         return; 
     }
 
-    // 2. If the script is paused, ignore everything else
     if (isPaused) return;
 
-    // 3. Captcha Detection (Listens to the main bot)
-    if (
-        message.author.id === POKETWO_BOT_ID && 
-        message.content.includes("Please tell us you're human!")
-    ) {
+    // 2. Captcha Detection
+    if (message.author.id === POKETWO_BOT_ID && message.content.includes("Please tell us you're human!")) {
         isPaused = true; 
         console.log("⚠️ Captcha detected, script paused.");
         return; 
     }
 
-    // 4. Collection Ping / Catch Detection (Listens to ANY of the 3 helper bots)
-    // We check if the sender is in our list AND if the message contains your ID
+    // 3. Collection Ping / Catch Detection
     if (HELPER_BOT_IDS.includes(message.author.id) && message.content.includes(client.user.id)) {
         
-        // Read the very first line of the message
         const firstLine = message.content.split('\n')[0];
-        
-        // Split at the "<" character (for emojis) OR ":" (for percentages) to isolate the Pokémon's name
         const nameMatch = firstLine.split(/<|:/)[0];
         
         if (nameMatch) {
-            // Remove extra spaces and make it lowercase
-            const pokemonName = nameMatch.trim().toLowerCase();
+            let pokemonName = nameMatch.trim();
             
-            // Safety check to ensure a name was actually extracted
             if (pokemonName) {
-                // ANTI-DETECTION: Add a realistic human reaction time (300ms to 600ms)
-                const reactionTime = 300 + Math.floor(Math.random() * 300);
+                console.log(`\n🔔 Pinged for: ${pokemonName}`);
+
+                // --- ADVANCED HUMANIZATION LOGIC ---
+
+                // 1. Reaction / Read Delay (Time it takes a human to notice the ping)
+                // Base reaction: 800ms to 2000ms
+                let readDelay = 800 + Math.floor(Math.random() * 1200);
+
+                // 10% chance to be "distracted" and take way longer to reply (4 to 10 extra seconds)
+                const isDistracted = Math.random() < 0.10;
+                if (isDistracted) {
+                    const distractionTime = 4000 + Math.floor(Math.random() * 6000);
+                    readDelay += distractionTime;
+                    console.log(`[Stealth] Distraction triggered. Delaying reaction by ${distractionTime}ms`);
+                }
+
+                await sleep(readDelay);
+
+                // 2. Start Typing Indicator
+                await message.channel.sendTyping().catch(() => {});
+
+                // 3. Typing Speed Delay (Based on word length)
+                // Humans type around 80ms to 150ms per character
+                const msPerChar = 80 + Math.floor(Math.random() * 70);
+                const typingDelay = pokemonName.length * msPerChar;
                 
-                // ANTI-DETECTION: 1-second base delay + up to 800ms random typing speed variance
-                const typeDelay = 1000 + Math.floor(Math.random() * 800);
+                await sleep(typingDelay);
 
-                setTimeout(async () => {
-                    // Simulate the "User is typing..." status indicator in Discord
-                    await message.channel.sendTyping().catch(() => {});
+                // 4. Command Obfuscation / Randomization
+                // Randomly choose between "c" and "catch"
+                const commandVariants = ["c", "catch"];
+                const cmd = commandVariants[Math.floor(Math.random() * commandVariants.length)];
 
-                    setTimeout(() => {
-                        // Send the catch message to the channel pinging the Poketwo bot
-                        message.channel.send(`<@${POKETWO_BOT_ID}> c ${pokemonName}`).catch(() => {});
-                        console.log(`🏓 Caught: ${pokemonName} (Typing delayed for ${typeDelay}ms)`);
-                    }, typeDelay);
+                // Randomly decide whether to convert the pokemon name to fully lowercase (humans are lazy)
+                // 70% chance to lowercase it, 30% chance to leave it capitalized as it was in the ping
+                if (Math.random() < 0.70) {
+                    pokemonName = pokemonName.toLowerCase();
+                }
 
-                }, reactionTime);
+                // Occasionally add a random extra space between the bot ping and the command
+                const extraSpace = Math.random() < 0.3 ? "  " : " ";
+
+                const finalMessage = `<@${POKETWO_BOT_ID}>${extraSpace}${cmd} ${pokemonName}`;
+
+                // Send the final message
+                message.channel.send(finalMessage).catch(() => {});
+                console.log(`🏓 Caught: ${pokemonName} (Read: ${readDelay}ms | Typed: ${typingDelay}ms)`);
             }
         }
     }
