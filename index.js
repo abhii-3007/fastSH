@@ -20,14 +20,18 @@ const client = new Client({
     checkUpdate: false
 });
 
-let myId = "";
 let isPaused = false; // Tracks whether the bot should respond
 
 const POKETWO_BOT_ID = "716390085896962058"; // The main bot (for captchas and catching)
-const HELPER_BOT_ID = "1307910235737948252"; // The bot that pings you with the stats
+
+// Array containing all three helper bots
+const HELPER_BOT_IDS = [
+    "1307910235737948252", 
+    "1411516692781072434", 
+    "1254602968938844171"
+];
 
 client.once("ready", () => {
-    myId = `<@${client.user.id}>`;
     console.log(`Logged in as ${client.user.tag}`);
 });
 
@@ -64,35 +68,40 @@ client.on("messageCreate", async (message) => {
         return; 
     }
 
-    // 4. Collection Ping / Catch Detection (Listens to the helper bot)
-    if (message.author.id === HELPER_BOT_ID && message.content.includes(myId)) {
-        // Read the very first line of the message (e.g., "Klawf <:rock:123...>: 99.83%")
+    // 4. Collection Ping / Catch Detection (Listens to ANY of the 3 helper bots)
+    // We check if the sender is in our list AND if the message contains your ID
+    if (HELPER_BOT_IDS.includes(message.author.id) && message.content.includes(client.user.id)) {
+        
+        // Read the very first line of the message
         const firstLine = message.content.split('\n')[0];
         
-        // Split at the "<" character to isolate just the Pokémon's name from the emoji
-        const nameMatch = firstLine.split('<')[0];
+        // Split at the "<" character (for emojis) OR ":" (for percentages) to isolate the Pokémon's name
+        const nameMatch = firstLine.split(/<|:/)[0];
         
         if (nameMatch) {
             // Remove extra spaces and make it lowercase
             const pokemonName = nameMatch.trim().toLowerCase();
             
-            // ANTI-DETECTION: Add a realistic human reaction time (300ms to 600ms)
-            const reactionTime = 300 + Math.floor(Math.random() * 300);
-            
-            // ANTI-DETECTION: 1-second base delay + up to 800ms random typing speed variance
-            const typeDelay = 1000 + Math.floor(Math.random() * 800);
+            // Safety check to ensure a name was actually extracted
+            if (pokemonName) {
+                // ANTI-DETECTION: Add a realistic human reaction time (300ms to 600ms)
+                const reactionTime = 300 + Math.floor(Math.random() * 300);
+                
+                // ANTI-DETECTION: 1-second base delay + up to 800ms random typing speed variance
+                const typeDelay = 1000 + Math.floor(Math.random() * 800);
 
-            setTimeout(async () => {
-                // Simulate the "User is typing..." status indicator in Discord
-                await message.channel.sendTyping().catch(() => {});
+                setTimeout(async () => {
+                    // Simulate the "User is typing..." status indicator in Discord
+                    await message.channel.sendTyping().catch(() => {});
 
-                setTimeout(() => {
-                    // Send the catch message to the channel pinging the Poketwo bot
-                    message.channel.send(`<@${POKETWO_BOT_ID}> c ${pokemonName}`).catch(() => {});
-                    console.log(`🏓 Caught: ${pokemonName} (Typing delayed for ${typeDelay}ms)`);
-                }, typeDelay);
+                    setTimeout(() => {
+                        // Send the catch message to the channel pinging the Poketwo bot
+                        message.channel.send(`<@${POKETWO_BOT_ID}> c ${pokemonName}`).catch(() => {});
+                        console.log(`🏓 Caught: ${pokemonName} (Typing delayed for ${typeDelay}ms)`);
+                    }, typeDelay);
 
-            }, reactionTime);
+                }, reactionTime);
+            }
         }
     }
 });
