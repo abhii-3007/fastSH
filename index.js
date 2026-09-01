@@ -57,9 +57,14 @@ client.on("messageCreate", async (message) => {
     if (isPaused) return;
 
     // 2. Captcha Detection
-    if (message.author.id === POKETWO_BOT_ID && message.content.includes("Please tell us you're human!")) {
+    // Now it ONLY pauses if the message is from Poketwo, asks for human verification, AND contains your User ID
+    if (
+        message.author.id === POKETWO_BOT_ID && 
+        message.content.includes("Please tell us you're human!") && 
+        message.content.includes(client.user.id)
+    ) {
         isPaused = true; 
-        console.log("⚠️ Captcha detected, script paused.");
+        console.log("⚠️ Captcha detected targeting YOUR account. Script paused.");
         return; 
     }
 
