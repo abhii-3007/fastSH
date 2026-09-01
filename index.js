@@ -33,7 +33,7 @@ const HELPER_BOT_IDS = [
 ];
 
 client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag} - Stealth Mode Active`);
+    console.log(`Logged in as ${client.user.tag} - Stealth Mode Active (Fast)`);
 });
 
 client.on("messageCreate", async (message) => {
@@ -75,16 +75,16 @@ client.on("messageCreate", async (message) => {
             if (pokemonName) {
                 console.log(`\n🔔 Pinged for: ${pokemonName}`);
 
-                // --- ADVANCED HUMANIZATION LOGIC ---
+                // --- ADJUSTED FAST HUMANIZATION LOGIC ---
 
-                // 1. Reaction / Read Delay (Time it takes a human to notice the ping)
-                // Base reaction: 800ms to 2000ms
-                let readDelay = 800 + Math.floor(Math.random() * 1200);
+                // 1. Reaction / Read Delay (Much faster now)
+                // Base reaction: 300ms to 800ms
+                let readDelay = 300 + Math.floor(Math.random() * 500);
 
-                // 10% chance to be "distracted" and take way longer to reply (4 to 10 extra seconds)
+                // 10% chance to be "distracted" - significantly reduced penalty time
                 const isDistracted = Math.random() < 0.10;
                 if (isDistracted) {
-                    const distractionTime = 4000 + Math.floor(Math.random() * 6000);
+                    const distractionTime = 2000 + Math.floor(Math.random() * 3000); // 2 to 5 seconds
                     readDelay += distractionTime;
                     console.log(`[Stealth] Distraction triggered. Delaying reaction by ${distractionTime}ms`);
                 }
@@ -94,27 +94,22 @@ client.on("messageCreate", async (message) => {
                 // 2. Start Typing Indicator
                 await message.channel.sendTyping().catch(() => {});
 
-                // 3. Typing Speed Delay (Based on word length)
-                // Humans type around 80ms to 150ms per character
-                const msPerChar = 80 + Math.floor(Math.random() * 70);
+                // 3. Typing Speed Delay (Fast typing)
+                // Simulating roughly 40ms to 80ms per character
+                const msPerChar = 40 + Math.floor(Math.random() * 40);
                 const typingDelay = pokemonName.length * msPerChar;
                 
                 await sleep(typingDelay);
 
                 // 4. Command Obfuscation / Randomization
-                // Randomly choose between "c" and "catch"
                 const commandVariants = ["c", "catch"];
                 const cmd = commandVariants[Math.floor(Math.random() * commandVariants.length)];
 
-                // Randomly decide whether to convert the pokemon name to fully lowercase (humans are lazy)
-                // 70% chance to lowercase it, 30% chance to leave it capitalized as it was in the ping
                 if (Math.random() < 0.70) {
                     pokemonName = pokemonName.toLowerCase();
                 }
 
-                // Occasionally add a random extra space between the bot ping and the command
                 const extraSpace = Math.random() < 0.3 ? "  " : " ";
-
                 const finalMessage = `<@${POKETWO_BOT_ID}>${extraSpace}${cmd} ${pokemonName}`;
 
                 // Send the final message
