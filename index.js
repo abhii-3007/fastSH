@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { Client } = require("discord.js-selfbot-v13");
+const { Client, Events } = require("@altkit/discord");
 
 // ==========================================
 // ANTI-CRASH SYSTEM
@@ -11,16 +11,8 @@ process.on('uncaughtExceptionMonitor', (err) => console.log('[Anti-Crash] Uncaug
 // Helper function to pause execution cleanly
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const client = new Client({
-    checkUpdate: false,
-    ws: {
-        properties: {
-            $os: "Windows",
-            $browser: "Discord Client",
-            $device: "desktop"
-        }
-    }
-});
+// AltKit automatically handles modern connection spoofing out of the box
+const client = new Client();
 
 let isPaused = false; 
 let isAFK = false; // Tracks if the bot is taking a random break
@@ -29,6 +21,7 @@ const POKETWO_BOT_ID = "716390085896962058";
 const HELPER_BOT_IDS = [
     "1307910235737948252", 
     "1411516692781072434", 
+    "1254602968938844171",
     "854233015475109888" 
 ];
 
@@ -44,11 +37,13 @@ function simulateTypo(word) {
     return arr.join('');
 }
 
-client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag} - Ultimate Stealth Mode Active`);
+// v14 Syntax: Use Events.ClientReady
+client.once(Events.ClientReady, (readyClient) => {
+    console.log(`Logged in as ${readyClient.user.tag} - Ultimate Stealth Mode (AltKit) Active`);
 });
 
-client.on("messageCreate", async (message) => {
+// v14 Syntax: Use Events.MessageCreate
+client.on(Events.MessageCreate, async (message) => {
     const msgContent = message.content.trim().toLowerCase();
 
     // 1. Handle Pause/Resume Commands
