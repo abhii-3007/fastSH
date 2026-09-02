@@ -13,7 +13,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const client = new Client({
     checkUpdate: false,
-    // Spoofing the connection to look like a standard Windows desktop app
     ws: {
         properties: {
             $os: "Windows",
@@ -24,18 +23,29 @@ const client = new Client({
 });
 
 let isPaused = false; 
+let isAFK = false; // Tracks if the bot is taking a random break
 
 const POKETWO_BOT_ID = "716390085896962058"; 
-
-// Array containing all four helper bots
 const HELPER_BOT_IDS = [
-    "1307910235737948252", // hatenna
-    "1411516692781072434", // cz inf
-    "854233015475109888" // <-- p2a
+    "1307910235737948252", 
+    "1411516692781072434", 
+    "854233015475109888" 
 ];
 
+// Helper function to simulate a random typing typo
+function simulateTypo(word) {
+    if (word.length < 4) return word; 
+    const arr = word.split('');
+    // Swap two random adjacent letters
+    const idx = 1 + Math.floor(Math.random() * (arr.length - 3)); 
+    const temp = arr[idx];
+    arr[idx] = arr[idx + 1];
+    arr[idx + 1] = temp;
+    return arr.join('');
+}
+
 client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag} - Stealth Mode Active (Fast)`);
+    console.log(`Logged in as ${client.user.tag} - Ultimate Stealth Mode Active`);
 });
 
 client.on("messageCreate", async (message) => {
@@ -56,7 +66,7 @@ client.on("messageCreate", async (message) => {
         return; 
     }
 
-    if (isPaused) return;
+    if (isPaused || isAFK) return;
 
     // 2. Captcha Detection
     if (
@@ -83,13 +93,32 @@ client.on("messageCreate", async (message) => {
     // 4. Collection Ping / Catch Detection
     if (HELPER_BOT_IDS.includes(message.author.id) && message.content.includes(client.user.id)) {
         
+        // --- STEALTH FEATURE: 5% Chance to miss the ping entirely ---
+        if (Math.random() < 0.05) {
+            console.log("🙈 [Stealth] Simulated human error: Ignored this ping.");
+            return; 
+        }
+
+        // --- STEALTH FEATURE: 2% Chance to go AFK for 10-20 minutes ---
+        if (Math.random() < 0.02) {
+            const afkTime = 600000 + Math.floor(Math.random() * 600000); // 10 to 20 mins
+            isAFK = true;
+            console.log(`🚶 [Stealth] Taking a bathroom break. AFK for ${Math.floor(afkTime / 60000)} minutes.`);
+            
+            setTimeout(() => {
+                isAFK = false;
+                console.log("🔙 [Stealth] Back at the keyboard.");
+            }, afkTime);
+            
+            return; 
+        }
+
         const firstLine = message.content.split('\n')[0];
         const nameMatch = firstLine.split(/<|:/)[0];
         
         if (nameMatch) {
             let pokemonName = nameMatch.trim();
             
-            // If the name has more than one word, look for "Best name" or "Shortest Name"
             if (pokemonName.includes(" ")) {
                 const bestNameMatch = message.content.match(/Best name:\s*([^\n]+)/i);
                 const shortestNameMatch = message.content.match(/Shortest Name:\s*([^\n]+)/i);
@@ -104,45 +133,42 @@ client.on("messageCreate", async (message) => {
             if (pokemonName) {
                 console.log(`\n🔔 Pinged for: ${pokemonName}`);
 
-                // --- ADJUSTED FAST HUMANIZATION LOGIC ---
-
-                // 1. Reaction / Read Delay (Max reduced by 200ms)
-                // Base reaction: 300ms to 600ms
+                // Reaction / Read Delay 
                 let readDelay = 300 + Math.floor(Math.random() * 300);
 
-                // 10% chance to be "distracted"
-                const isDistracted = Math.random() < 0.10;
-                if (isDistracted) {
-                    const distractionTime = 2000 + Math.floor(Math.random() * 3000); // 2 to 5 seconds
+                // 10% chance to be "distracted" for a few seconds
+                if (Math.random() < 0.10) {
+                    const distractionTime = 2000 + Math.floor(Math.random() * 3000); 
                     readDelay += distractionTime;
                     console.log(`[Stealth] Distraction triggered. Delaying reaction by ${distractionTime}ms`);
                 }
 
                 await sleep(readDelay);
-
-                // 2. Start Typing Indicator
                 await message.channel.sendTyping().catch(() => {});
 
-                // 3. Typing Speed Delay (Fast typing)
-                // Simulating roughly 40ms to 80ms per character
+                // Typing Speed Delay 
                 const msPerChar = 40 + Math.floor(Math.random() * 40);
                 const typingDelay = pokemonName.length * msPerChar;
-                
                 await sleep(typingDelay);
 
-                // 4. Command Obfuscation / Randomization
+                // --- STEALTH FEATURE: 5% chance to make a typo ---
+                if (Math.random() < 0.05) {
+                    pokemonName = simulateTypo(pokemonName);
+                    console.log(`[Stealth] Made a typo: ${pokemonName}`);
+                }
+
                 const commandVariants = ["c", "catch"];
                 const cmd = commandVariants[Math.floor(Math.random() * commandVariants.length)];
 
-                // Ensure name goes lowercase most of the time for natural typing
                 if (Math.random() < 0.70) {
                     pokemonName = pokemonName.toLowerCase();
                 }
 
-                const extraSpace = Math.random() < 0.3 ? "  " : " ";
+                // --- STEALTH FEATURE: 3% chance to forget the space (e.g. "cpikachu") ---
+                const extraSpace = Math.random() < 0.03 ? "" : (Math.random() < 0.3 ? "  " : " ");
+                
                 const finalMessage = `<@${POKETWO_BOT_ID}>${extraSpace}${cmd} ${pokemonName}`;
 
-                // Send the final message
                 message.channel.send(finalMessage).catch(() => {});
                 console.log(`🏓 Caught: ${pokemonName} (Read: ${readDelay}ms | Typed: ${typingDelay}ms)`);
             }
