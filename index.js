@@ -57,7 +57,6 @@ client.on("messageCreate", async (message) => {
     if (isPaused) return;
 
     // 2. Captcha Detection
-    // Now it ONLY pauses if the message is from Poketwo, asks for human verification, AND contains your User ID
     if (
         message.author.id === POKETWO_BOT_ID && 
         message.content.includes("Please tell us you're human!") && 
@@ -68,7 +67,18 @@ client.on("messageCreate", async (message) => {
         return; 
     }
 
-    // 3. Collection Ping / Catch Detection
+    // 3. Shiny Catch Detection
+    if (
+        message.author.id === POKETWO_BOT_ID && 
+        message.content.includes("These colors seem unusual...") && 
+        message.content.includes(client.user.id)
+    ) {
+        isPaused = true; 
+        console.log("✨ shiny caught - script paused.");
+        return; 
+    }
+
+    // 4. Collection Ping / Catch Detection
     if (HELPER_BOT_IDS.includes(message.author.id) && message.content.includes(client.user.id)) {
         
         const firstLine = message.content.split('\n')[0];
@@ -77,16 +87,28 @@ client.on("messageCreate", async (message) => {
         if (nameMatch) {
             let pokemonName = nameMatch.trim();
             
+            // If the name has more than one word, look for "Best name" or "Shortest Name"
+            if (pokemonName.includes(" ")) {
+                const bestNameMatch = message.content.match(/Best name:\s*([^\n]+)/i);
+                const shortestNameMatch = message.content.match(/Shortest Name:\s*([^\n]+)/i);
+                
+                if (bestNameMatch) {
+                    pokemonName = bestNameMatch[1].trim();
+                } else if (shortestNameMatch) {
+                    pokemonName = shortestNameMatch[1].trim();
+                }
+            }
+
             if (pokemonName) {
                 console.log(`\n🔔 Pinged for: ${pokemonName}`);
 
                 // --- ADJUSTED FAST HUMANIZATION LOGIC ---
 
-                // 1. Reaction / Read Delay (Much faster now)
-                // Base reaction: 300ms to 800ms
-                let readDelay = 300 + Math.floor(Math.random() * 500);
+                // 1. Reaction / Read Delay (Max reduced by 200ms)
+                // Base reaction: 300ms to 600ms
+                let readDelay = 300 + Math.floor(Math.random() * 280);
 
-                // 10% chance to be "distracted" - significantly reduced penalty time
+                // 10% chance to be "distracted"
                 const isDistracted = Math.random() < 0.10;
                 if (isDistracted) {
                     const distractionTime = 2000 + Math.floor(Math.random() * 3000); // 2 to 5 seconds
@@ -110,6 +132,7 @@ client.on("messageCreate", async (message) => {
                 const commandVariants = ["c", "catch"];
                 const cmd = commandVariants[Math.floor(Math.random() * commandVariants.length)];
 
+                // Ensure name goes lowercase most of the time for natural typing
                 if (Math.random() < 0.70) {
                     pokemonName = pokemonName.toLowerCase();
                 }
