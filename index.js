@@ -26,10 +26,12 @@ const client = new Client({
 let isPaused = false; 
 
 const POKETWO_BOT_ID = "716390085896962058"; 
+
+// Array containing all four helper bots
 const HELPER_BOT_IDS = [
-    "1307910235737948252", 
-    "1411516692781072434", 
-    "1254602968938844171"
+    "1307910235737948252", // hatenna
+    "1411516692781072434", // cz inf
+    "854233015475109888" // <-- p2a
 ];
 
 client.once("ready", () => {
@@ -74,7 +76,7 @@ client.on("messageCreate", async (message) => {
         message.content.includes(client.user.id)
     ) {
         isPaused = true; 
-        console.log("✨ shiny caught - script paused.");
+        console.log("✨ Shiny caught - script paused.");
         return; 
     }
 
@@ -106,7 +108,7 @@ client.on("messageCreate", async (message) => {
 
                 // 1. Reaction / Read Delay (Max reduced by 200ms)
                 // Base reaction: 300ms to 600ms
-                let readDelay = 300 + Math.floor(Math.random() * 280);
+                let readDelay = 300 + Math.floor(Math.random() * 300);
 
                 // 10% chance to be "distracted"
                 const isDistracted = Math.random() < 0.10;
